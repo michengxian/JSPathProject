@@ -1,270 +1,72 @@
-# MVVM-test
-MVVM-Test
+# JSPathProject
+JSPathProject
 
 
-## `LKDBHelper`和`MagicalRecord`的基本用法
+## JSPath
 
->`LKDBHelper`是对`FMDB`的封装，可以在不写`sql`语句的情况下，使用`model`就可以全自动的进行数据表的创建，及数据的增、删、改、查。
-
-***
-
->`MagicalRecord`是对`CoreData`的简单封装
-
-引入方式`cocoachina`：
-
-```
-pod 'MagicalRecord', '~> 2.3.2'
-pod 'LKDBHelper', '~> 2.5.1'
-```
+>`JSPath`是`iOS`端强大的热更新工具，但是不幸的是，被苹果爸爸仅用了。导致现在的应用出了bug只能老老实实的发布新版本，不能通过热更新来实时修复。给我们带来了很多的不便。
 
 ***
 
-##  `LKDBHelper`初始化
+有时候一点点小问题，也需要发布新版本，虽然现在苹果审核速度快了很多，一般两到三天就能审核通过，但碰到一些紧急问题，难免还是有点不方便。
 
-> `LKDBModel`是我需要存储的类，`.h`文件：
+所以，我就又开始想着怎么规避审核来集成`JSPath`，于是有了下面的思路
 
-```
-@property (nonatomic , assign) NSInteger model_id;
+以下是工程**目录**：
 
-@property (nonatomic , strong) NSString *name;
+![工程目录](https://upload-images.jianshu.io/upload_images/1621313-711f73e39b56bd3a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-@property (nonatomic , assign) BOOL isShow;
+1. `Repair`文件夹是把`JSPath`中`JPEngine`类进行了拆分与改名。避免苹果审核查出JSPath相关字眼。
 
-@property (nonatomic , strong) NSArray *dataArray;
-
-//由于发现字典类型不能直接存储，所以转成NSString进行存储。
-@property (nonatomic , strong) NSString *dataDictString;
-```
-
-`.m`文件，首先引入`#import "LKDBHelper.h"`头文件，一般情况，设置一个主键名就行：
+2. 在`ViewController`中创建了一个`UIButton`，`UIButton`的点击事件如下：
 
 ```
-///**设置表名，一般不写，默认表名为类名*/
-//+(NSString *)getTableName
-//{
-//    return @"LKDB.db";
-//}
-
-/**主键名*/
-+(NSString *)getPrimaryKey
-{
-    return @"model_id";
+- (IBAction)testCrashAction:(id)sender {
+    NSLog(@"--------testWillCrash--------");
+    
+    NSString *crash = [self testCrash];
+    
+    NSLog(@"--------testDidCrash--------%@",crash);
 }
 
-/**复合主键*/
-//+(NSArray *)getPrimaryKeyUnionArray
-//{
-//
-//}
-```
-
-***
-
-## `LKDBHelper`增
-
-```
-    LKDBModel *model=[[LKDBModel alloc]init];
-    model.model_id=self.count;
-    model.name=[NSString stringWithFormat:@"name-%ld",self.count];
-    if (self.count%2==0) {
-        model.isShow=YES;
-    }
-    else{
-        model.isShow=NO;
-    }
+-(NSString *)testCrash
+{
+    NSArray *array = [[NSArray alloc]initWithObjects:@"1",@"2", nil];
     
-    NSMutableArray *array=[[NSMutableArray alloc]init];
-    for (NSInteger i=0; i<self.count; i++) {
-        [array addObject:[NSNumber numberWithInteger:i]];
-    }
-    model.dataArray=array;
-
-    NSMutableDictionary *dict=[[NSMutableDictionary alloc]init];
-    for (NSInteger i=0; i<self.count; i++) {
-        [dict setObject:[NSString stringWithFormat:@"dict-%ld",self.count] forKey:[NSNumber numberWithInteger:i]];
-    }
-    model.dataDictString=[NSString stringWithFormat:@"%@",dict];
-    [model saveToDB]
+    return array[2];
+}
 ```
+很明显，如果这样的代码上线，用户一点击按钮程序就会崩溃，因为数组`array`中只有两个元素"1"、"2"，当你去取第三个元素的时候就会崩溃（不多说）。
 
-***
-
-## `LKDBHelper`删
-
-方式一（直接删除某个`model`）：
+3. 这时如果我们在`AppDelegate`中做以下处理，就能避免这个问题。
 
 ```
-BOOL success=[self.helper deleteToDB:model];
-```
-
-方式二（根据条件删除）：
-
-```
-BOOL success=[self.helper deleteWithClass:[LKDBModel class] where:@{@"model_id":[NSNumber numberWithInteger:model.model_id]}];
-```
-
-***
-
-## `LKDBHelper`改
-
-```
-model.name=[NSString stringWithFormat:@"changeName-%ld",self.count];
-BOOL success=[model saveToDB];
-```
-
-***
-
-## `LKDBHelper`查
-
-```
-[self.helper search:[LKDBModel class] where:nil orderBy:nil offset:0 count:0 callback:^(NSMutableArray * _Nullable array) {
-    NSLog(@"searchButtonClick:%@",array);
-}];
-
-```
-
-***
-
-## `coreData`的使用
-
-[新建一个coreData](https://www.jianshu.com/p/d88586217736)
-
-***
-
-## `MagicalRecord`初始化，一般在`AppDelegate.m`的`didFinishLaunchingWithOptions`函数进行初始化
-
-```
-    [MagicalRecord setupCoreDataStack];
-    [MagicalRecord setupCoreDataStackWithStoreNamed:@"MagicalRecord.sqlite"];
-
-    self.localContext    = [NSManagedObjectContext MR_context];
-```
-
-***
-
-## `MagicalRecord`增
-
-```
-//初始化一个Model
-    MRModel *model=[MRModel MR_createEntityInContext:self.localContext];
-//对该Model进行赋值
-    model.id=self.count;
-    model.name=[NSString stringWithFormat:@"name-%ld",self.count];
-    if (self.count%2==0) {
-        model.isShow=YES;
-    }
-    else{
-        model.isShow=NO;
-    }
-
-//这句话很重要。增删改查都要用这个方法来保存数据
-[self.localContext MR_saveToPersistentStoreAndWait];
-```
-
-***
-
-## `MagicalRecord`删
-
-*  先查再删 **删除所有符合条件的数据**
-
-
-```
-    NSPredicate *predicate=[NSPredicate predicateWithFormat:@"id=3"];
-    NSFetchRequest *request=[[NSFetchRequest alloc]init];
-    [request setPredicate:predicate];
-    NSEntityDescription *entity=[NSEntityDescription entityForName:@"MRModel" inManagedObjectContext:self.localContext];
-    [request setEntity:entity];
-    NSArray *arr=[self.localContext executeFetchRequest:request error:nil];
-    [arr enumerateObjectsUsingBlock:^(MRModel * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        BOOL success=[obj MR_deleteEntity];
-        if (success) {
-            NSLog(@"删除成功");
-        }
-        else{
-            NSLog(@"删除失败");
-        }
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    // Override point for customization after application launch.
+    
+    dispatch_semaphore_t disp = dispatch_semaphore_create(0);
+    //http://localhost:8080/JSPath/Repair 就是返回原JSPath中JSPatch.js与修复的js文件的接口即可。
+    [[RequestManager manager] get:@"http://localhost:8080/person/homePage/test2" success:^(id  _Nonnull data) {
+        NSDictionary *response=[data objectForKey:@"response"];
+        NSString *repair=[response objectForKey:@"repair"];
+        NSString *base=[response objectForKey:@"base"];
+        [[NSUserDefaults standardUserDefaults] setObject:base forKey:@"Repair"];
+        
+        [Repair startEngineWithBaseString:base];
+        [Repair evaluateScript:repair];
+        
+        dispatch_semaphore_signal(disp);
+    } fail:^(id  _Nonnull data) {
+        dispatch_semaphore_signal(disp);
     }];
-    //必须要加上这句话，不然没法删除成功
-    [self.localContext MR_saveToPersistentStoreAndWait];
-```
-*  直接删 **删除第一条符合条件的数据**
-
-
-```
-    NSPredicate *predicate=[NSPredicate predicateWithFormat:@"id=1"];
-    BOOL success = [MRModel MR_deleteAllMatchingPredicate:predicate inContext:self.localContext];
-    if (success) {
-        NSLog(@"删除成功");
-    }
-    else{
-        NSLog(@"删除失败");
-    }
-    [self.localContext MR_saveToPersistentStoreAndWait];
-```
-
-***
-
-## `MagicalRecord`改
-
-*  用`MR_findByAttribute `查找并修改
-
-
-```
-NSArray *array=[MRModel MR_findByAttribute:@"id" withValue:[NSNumber numberWithInteger:1]];
-    [array enumerateObjectsUsingBlock:^(MRModel * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        obj.name=@"修改-name";
-    }];
-    [self.localContext MR_saveToPersistentStoreAndWait];
-```
-
-*  用`NSFetchRequest `查找并修改
-
-
-```
-    NSFetchRequest *request=[[NSFetchRequest alloc]init];
-    [request setPredicate:predicate];
-    NSEntityDescription *entity=[NSEntityDescription entityForName:@"MRModel" inManagedObjectContext:self.localContext];
-    [request setEntity:entity];
-    NSArray *arr=[self.localContext executeFetchRequest:request error:nil];
-    [arr enumerateObjectsUsingBlock:^(MRModel * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSLog(@"id: %lld , \nname: %@ ,\nisShow：%d", obj.id, obj.name,obj.isShow);
-        obj.name=@"修改-name";
-    }];
-    [self.localContext MR_saveToPersistentStoreAndWait];
-```
-
-***
-
-## `MagicalRecord`查
-
-*  查找所有
-
-
-```
-    NSArray *array=[MRModel MR_findAll];
-    [array enumerateObjectsUsingBlock:^(MRModel * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSLog(@"id: %lld , \nname: %@ ,\nisShow：%d", obj.id, obj.name,obj.isShow);
-    }];
-```
-
-*  根据条件查找
-
-
-```
-    NSPredicate *predicate=[NSPredicate predicateWithFormat:@"isShow=1"];
-    NSFetchRequest *request=[[NSFetchRequest alloc]init];
-    [request setPredicate:predicate];
-    NSEntityDescription *entity=[NSEntityDescription entityForName:@"MRModel" inManagedObjectContext:self.localContext];
-    [request setEntity:entity];
-    NSArray *arr=[self.localContext executeFetchRequest:request error:nil];
-    [arr enumerateObjectsUsingBlock:^(MRModel * obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        NSLog(@"id: %lld , \nname: %@ ,\nisShow：%d", obj.id, obj.name,obj.isShow);
-    }];
+    dispatch_semaphore_wait(disp, 2* NSEC_PER_SEC);
+    
+    [self.window makeKeyAndVisible];
+    return YES;
+}
 ```
 
 ***
 
 
-[简书](https://www.jianshu.com/u/3d71bdb43dc7)
-[blog](https://michengxian.github.io)
 

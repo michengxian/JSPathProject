@@ -22,8 +22,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    dispatch_semaphore_t disp = dispatch_semaphore_create(0);
-    [[RequestManager manager] get:@"http://localhost:8080/JSPath/Repair" success:^(id  _Nonnull data) {
+    [[RequestManager manager] get:@"http://localhost:8080/mobile/JSPath/repair" success:^(id  _Nonnull data) {
         NSDictionary *response=[data objectForKey:@"response"];
         NSString *repair=[response objectForKey:@"repair"];
         NSString *base=[response objectForKey:@"base"];
@@ -32,13 +31,9 @@
         [Repair startEngineWithBaseString:base];
         [Repair evaluateScript:repair];
         
-        dispatch_semaphore_signal(disp);
     } fail:^(id  _Nonnull data) {
-        dispatch_semaphore_signal(disp);
+        NSLog(@"------------接口请求错误-------------");
     }];
-    dispatch_semaphore_wait(disp, 3* NSEC_PER_SEC);
-    
-    [self.window makeKeyAndVisible];
     
     
     return YES;

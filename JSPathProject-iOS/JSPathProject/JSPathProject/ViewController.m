@@ -17,10 +17,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    
-    
 }
-- (IBAction)testCrashAction:(id)sender {
+
+- (IBAction)storyboardTestCarshAction:(id)sender {
     NSLog(@"--------testWillCrash--------");
     
     NSString *crash = [self testCrash];
@@ -31,9 +30,7 @@
 -(NSString *)testCrash
 {
     NSArray *array = [[NSArray alloc]initWithObjects:@"1",@"2", nil];
-    
     return array[2];
-//    NSLog(@"--------crash--------\n%@",array[2]);
 }
 
 @end

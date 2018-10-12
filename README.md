@@ -5,7 +5,9 @@
 
 有时候一点点小问题，也需要发布新版本，虽然现在苹果审核速度快了很多，一般两到三天就能审核通过，但碰到一些紧急问题，难免还是有点不方便。
 
-所以，我就又开始想着怎么规避审核来集成`JSPath`，于是有了下面的思路
+所以，我就又开始想着怎么规避审核来集成`JSPath`，于是有了下面的思路。
+
+原理：规避检查，把JSPath等相关字眼进行替换，`JSPath.js`与`demo.js`文件由后台返回。
 
 ***
 
@@ -82,7 +84,7 @@ defineClass('ViewController : UIViewController',[], {
 ```
 
 2. `JSPatch.js`文件是原JSPath中的文件，直接挪过来的。（没有任何修改）
-3. 我们在看`/src/main/java/com/mobil/JSPath/repository/JSPathRepositoryImpl`文件
+3. 我们再看`/src/main/java/com/mobil/JSPath/repository/JSPathRepositoryImpl`文件，把本地的`.js`文件解析成字符串传给前端。（当然也可以写入数据库等等操作）
 
 ```
 package com.mobile.JSPath.repository;
@@ -140,6 +142,7 @@ public class JSPathRepositoryImpl implements JSPathRepository {
                 e.printStackTrace();
             }
         }
+        //如果需要加密，把base与repair进行加密再set
         bean.setBase(base);
         bean.setRepair(repair);
         return bean;
